@@ -1,5 +1,5 @@
 // Vercel serverless function: GET /api/examples.
-// Returns exactly the same JSON as the /api/examples route in local-server.js.
+// Returns exactly the same JSON as the /api/examples route in server.js.
 // The preset list itself lives in src/examples.js and is unchanged.
 import { EXAMPLES } from "../src/examples.js";
 

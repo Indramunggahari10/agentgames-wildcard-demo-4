@@ -92,9 +92,16 @@ export function createServer() {
   });
 }
 
+// Default export: Vercel's Node.js runtime requires the server entrypoint's
+// default export to be a function or a server. Exporting the created server
+// lets Vercel route requests through it; running `node server.js` directly
+// still listens on $PORT as before.
+const server = createServer();
+export default server;
+
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const port = Number(process.env.PORT || 3000);
-  createServer().listen(port, () => {
+  server.listen(port, () => {
     console.log(`wallet-guard listening on :${port}`);
   });
 }

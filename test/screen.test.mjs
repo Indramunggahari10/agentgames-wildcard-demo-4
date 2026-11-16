@@ -4,7 +4,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { screenTransaction, parseValue, formatEth, MAX_UINT256 } from "../src/screen.js";
 import { EXAMPLES, padAddress, padUint, padBool } from "../src/examples.js";
-import { createServer } from "../local-server.js";
+import { createServer } from "../server.js";
 
 const TOKEN = "0x1111111111111111111111111111111111111111";
 const SPENDER = "0x2222222222222222222222222222222222222222";

@@ -1,5 +1,5 @@
 // Vercel serverless function: POST /api/screen.
-// Same request/response contract as the /api/screen route in local-server.js:
+// Same request/response contract as the /api/screen route in server.js:
 // the body is read raw (Vercel's automatic body parsing is disabled below)
 // with the same 64 KB cap, the same 400/413 error strings, and the same
 // screening logic from src/screen.js, unchanged.

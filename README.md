@@ -100,7 +100,7 @@ serverless functions that wrap the unchanged `src/` screening logic
 (`GET /api/health`, `POST /api/screen`, `GET /api/examples`), `public/` is
 served as static files (the UI at `/`), and `vercel.json` rewrites
 `GET /health` to the health function so the liveness probe keeps its path.
-The local server (`npm start`, `local-server.js`) is unchanged and still works.
+The local server (`npm start`, `server.js`) is unchanged and still works.
 
 ## License
 
