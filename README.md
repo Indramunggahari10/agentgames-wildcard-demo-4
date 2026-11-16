@@ -92,6 +92,16 @@ npm start    # serves on $PORT (default 3000)
 
 Deployed on Railway from this public repo with no environment variables.
 
+## Deploy on Vercel (Hobby free tier)
+
+The same repo also runs on Vercel with no environment variables: import it
+in the Vercel dashboard and deploy. The `api/` directory holds zero-dependency
+serverless functions that wrap the unchanged `src/` screening logic
+(`GET /api/health`, `POST /api/screen`, `GET /api/examples`), `public/` is
+served as static files (the UI at `/`), and `vercel.json` rewrites
+`GET /health` to the health function so the liveness probe keeps its path.
+The local server (`npm start`, `server.js`) is unchanged and still works.
+
 ## License
 
 MIT.
