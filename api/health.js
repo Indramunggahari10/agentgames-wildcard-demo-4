@@ -1,6 +1,7 @@
 // Vercel serverless function: GET /api/health.
-// Also reachable as GET /health via the rewrite in vercel.json.
 // Returns exactly the same JSON as the /health route in server.js.
+// (No rewrite: in this project's Node server mode, server.js routes
+// /health directly, so a /health -> /api/health rewrite would 404.)
 // No dependencies, no I/O beyond the response.
 export default function handler(req, res) {
   if (req.method !== "GET") {

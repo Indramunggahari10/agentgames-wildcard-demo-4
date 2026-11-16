@@ -46,6 +46,10 @@ export function createServer() {
         sendJson(res, 200, { ok: true, service: "wallet-guard", version: "1.0.0" });
         return;
       }
+      if (req.method === "GET" && url.pathname === "/api/health") {
+        sendJson(res, 200, { ok: true, service: "wallet-guard", version: "1.0.0" });
+        return;
+      }
       if (req.method === "GET" && url.pathname === "/") {
         const html = await readFile(INDEX_PATH, "utf8");
         res.writeHead(200, { "content-type": "text/html; charset=utf-8" });
