@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Wallet Guard — read a transaction before you sign it</title>
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 760px; margin: 2rem auto; padding: 0 1rem; color: #1a1a1a; }
+  h1 { font-size: 1.5rem; }
+  .notice { background: #eef6ff; border: 1px solid #9cc3e5; padding: 0.75rem 1rem; border-radius: 6px; }
+  label { display: block; margin-top: 1rem; font-weight: 600; }
+  input, textarea { width: 100%; box-sizing: border-box; margin-top: 0.25rem; padding: 0.5rem; font-family: monospace; font-size: 0.9rem; }
+  textarea { min-height: 4.5rem; }
+  button { margin-top: 1rem; padding: 0.6rem 1.2rem; font-size: 1rem; cursor: pointer; }
+  .examples button { margin: 0.25rem 0.25rem 0 0; padding: 0.4rem 0.8rem; font-size: 0.85rem; }
+  .verdict { margin-top: 1.5rem; padding: 1rem; border-radius: 6px; font-size: 1.1rem; font-weight: 700; }
+  .verdict.safe { background: #e6f4ea; border: 1px solid #34a853; }
+  .verdict.caution { background: #fef7e0; border: 1px solid #f9ab00; }
+  .verdict.high { background: #fce8e6; border: 1px solid #d93025; }
+  .flag { border: 1px solid #ddd; border-left: 6px solid #888; border-radius: 4px; padding: 0.6rem 0.8rem; margin-top: 0.6rem; }
+  .flag.high { border-left-color: #d93025; }
+  .flag.medium { border-left-color: #f9ab00; }
+  .flag.info { border-left-color: #1a73e8; }
+  .flag h3 { margin: 0 0 0.25rem; font-size: 1rem; }
+  .flag p { margin: 0; color: #444; }
+  .flag code { font-size: 0.8rem; color: #666; }
+  table { border-collapse: collapse; margin-top: 0.6rem; width: 100%; }
+  td, th { border: 1px solid #ddd; padding: 0.4rem; text-align: left; font-size: 0.85rem; word-break: break-all; }
+  .error { color: #d93025; font-weight: 600; margin-top: 1rem; }
+  footer { margin-top: 2rem; color: #666; font-size: 0.85rem; }
+</style>
+</head>
+<body>
+<h1>Wallet Guard</h1>
+<p>Paste the three fields your wallet shows before signing — recipient, value, calldata — and get a plain-language risk verdict.</p>
+<p class="notice"><strong>Read-only.</strong> This tool never signs, sends, or simulates a transaction, never touches funds, and never asks for keys. Nothing you paste leaves your browser except to this server for analysis, and nothing is stored or logged.</p>
+
+<div class="examples" id="examples"><strong>Try an example:</strong><br></div>
+
+<form id="form">
+  <label>To (recipient / contract address)
+    <input id="to" required placeholder="0x..." autocomplete="off" spellcheck="false">
+  </label>
+  <label>Value (wei, decimal or 0x hex; empty = 0)
+    <input id="value" placeholder="0" autocomplete="off" spellcheck="false">
+  </label>
+  <label>Calldata (0x hex; empty or 0x = plain transfer)
+    <textarea id="data" placeholder="0x" autocomplete="off" spellcheck="false"></textarea>
+  </label>
+  <button type="submit">Screen this transaction</button>
+</form>
+
+<div id="result"></div>
+
+<footer>Checks: unlimited approvals, unverified spenders, plain transfers, risky selectors, unknown functions, and malformed calldata. A "safe" verdict means no flag was raised — it is not a guarantee. See the repo README for limits.</footer>
+
+<script>
+const $ = (id) => document.getElementById(id);
+
+fetch("/api/examples").then(r => r.json()).then(({ examples }) => {
+  const box = $("examples");
+  for (const ex of examples) {
+    const b = document.createElement("button");
+    b.type = "button";
+    b.textContent = ex.name;
+    b.title = ex.description;
+    b.onclick = () => {
+      $("to").value = ex.input.to;
+      $("value").value = ex.input.value;
+      $("data").value = ex.input.data;
+      $("result").innerHTML = "";
+    };
+    box.appendChild(b);
+  }
+});
+
+$("form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const out = $("result");
+  out.innerHTML = "";
+  let res;
+  try {
+    res = await fetch("/api/screen", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ to: $("to").value.trim(), value: $("value").value.trim(), data: $("data").value.trim() }),
+    });
+  } catch {
+    out.innerHTML = '<p class="error">Could not reach the server.</p>';
+    return;
+  }
+  const body = await res.json();
+  if (!res.ok) {
+    out.innerHTML = `<p class="error">${escapeHtml(body.error || "Request failed")}</p>`;
+    return;
+  }
+  const verdictLabel = { safe: "SAFE", caution: "CAUTION", high: "HIGH RISK" }[body.verdict];
+  let html = `<div class="verdict ${body.verdict}">${verdictLabel} — ${escapeHtml(body.summary)}</div>`;
+  if (body.decoded) {
+    const d = body.decoded;
+    html += `<h2>Decoded call</h2><p><code>${escapeHtml(d.signature || ("unknown selector " + d.selector))}</code></p>`;
+    if (d.args && d.args.length) {
+      html += "<table><tr><th>#</th><th>Type</th><th>Value</th></tr>" +
+        d.args.map((a, i) => `<tr><td>${i}</td><td>${escapeHtml(a.type)}</td><td>${escapeHtml(String(a.value))}</td></tr>`).join("") + "</table>";
+    }
+    if (d.note) html += `<p><em>${escapeHtml(d.note)}</em></p>`;
+  } else {
+    html += "<h2>Decoded call</h2><p><em>No calldata — plain value transfer or empty call.</em></p>";
+  }
+  html += "<h2>Flags</h2>";
+  for (const f of body.flags) {
+    html += `<div class="flag ${f.level}"><h3>${escapeHtml(f.title)}</h3><p>${escapeHtml(f.detail)}</p><code>${escapeHtml(f.code)} · ${f.level}</code></div>`;
+  }
+  out.innerHTML = html;
+});
+
+function escapeHtml(s) {
+  return s.replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+}
+</script>
+</body>
+</html>
